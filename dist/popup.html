@@ -347,13 +347,13 @@
         for (var i in torrents) {
             var e = torrents[i];
 
-status(e.torrent_url);            
+//status(e.torrent_url);            
             if (! e.torrent_url) {
-status("in");            
+//status("in");            
                 getTPB(i, e.title,e.year);
             }
 //DEBUG
-break;
+//break;
         }
         status('');
     }
