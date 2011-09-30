@@ -1,14 +1,16 @@
 {
     "name": "Cinemaki Plus",
-    "version": "1.0",
+    "version": "1.1",
     "description": "A Cinemaki queue downloader",
-    "icons": {"128": "icon.png"},
+    "icons": {"128": "icon_128.png"},
     "browser_action": 
         {
             "default_icon": "browseraction.png",
             "default_title": "Cinemaki Plus",
             "popup": "popup.html"
         },
+    "update_url": "https://github.com/devely/CinemakiPlus/blob/master/updates.xml",
+        
     "permissions": [
     "tabs", "http://*/*"
     ],
