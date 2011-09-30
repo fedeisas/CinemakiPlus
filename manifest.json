@@ -10,7 +10,6 @@
             "popup": "popup.html"
         },
     "update_url": "https://github.com/devely/CinemakiPlus/blob/master/updates.xml",
-        
     "permissions": [
     "tabs", "http://*/*"
     ],
