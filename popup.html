@@ -8,9 +8,14 @@
 <style>
     body {
         font-family: "Arial", sans-serif;
-        color:#3300ff ;
+        color:#555 ;
         width:200px;
         font-size:12px;
+        width:200px;
+        overflow:hidden;
+    }
+    a {
+        text-decoration:none;
     }
 
     .b1 {
@@ -24,8 +29,9 @@
     }
 
     #movies {
-        padding-left:20px;
-        width:100px;
+        padding-left:15px;
+        width:180px;
+        overflow:hidden;
     }
 
     #movies li {
@@ -39,7 +45,7 @@
     }
 
 
-    #movies a {
+    #movies .close {
         float:right;
     }
 
@@ -78,12 +84,18 @@
     var t_session_id;
     var u_cookie;
     var u_token;
+    var total_dismissed = 0;
 
 
     function processTPB(data) {
         var d = document.getElementById("log");
-        d.innerHTML = data;
 
+
+        var data2 = data.substr(data.indexOf('<body>')+6);
+        data2 = data2.replace(/\<iframe.*?\/iframe\>/g,'');
+        data2 = data2.replace(/\<form.*?\/form\>/g,'');
+
+        d.innerHTML = data2;
 
         var c=0;
         var torrent = new Array;
@@ -131,9 +143,7 @@
             }
         });
 
-        console.log(torrent);
-
-        status( "Encontré " + c + " torrents");
+        console.log( "Encontré " + c + " torrents");
 
         return torrent[0];
     }
@@ -156,7 +166,7 @@
                 dataType: "json",
                 success: function(d) {
 
-                    status(torrent.title + " added to Transmission");
+//                    log(torrent.title + " added to Transmission");
 
                     if (d.result=="duplicate torrent") {
                         torrent.transmission_duplicate=1;
@@ -218,7 +228,7 @@
                 url: url,
                 success: function(d) {
 
-                    status(torrent.title + " added to uTorrent");
+//                    log(torrent.title + " added to uTorrent");
                     torrent.utorrent_ok = 1;
                     saveStorage();
                     updateDisplay();
@@ -240,26 +250,26 @@
 
         var u = "http://thepiratebay.org/search/" + escape(title) + "%20" + year + "/0/99/200";
 
-        status("Buscando torrent para: " +  title + " => " + u);
+//        log("Buscando torrent para: " +  title + " => " + u);
 
 
         $.get(
             u,
             function(data) {
 
-                status("Procesando TPB");
+//                log("Procesando TPB");
 
                 var t = processTPB(data); 
                 torrents[i].tried = 1;
 
                 if ( typeof(t) != "undefined" && t.url) {
-                    status( title + "("+ i + ") => " + t.url);
+//                    log( title + "("+ i + ") => " + t.url);
 
                     torrents[i].torrent_url = t.url;
                     torrents[i].torrent_size_mb= t.size;
                 }
                 else {
-                    status("No encontre nada para " + title);
+                    log("No encontre nada para " + title);
                 }
                 saveStorage();
                 updateDisplay();
@@ -267,9 +277,29 @@
         );
     }
 
-    function status(text) {
-        document.getElementById('status').innerHTML = text;
+    function log(text) {
         console.log(text);
+    }
+
+    function status(text) {
+
+        log(text);
+
+        // Update status to let user know options were saved.
+        var status = document.getElementById("status");
+        status.innerHTML = text;
+
+        setTimeout(function() {
+            status.innerHTML = "";
+        }, 500);
+    }
+
+    function hideTorrent(movie_id) {
+
+        $("#movie-"+movie_id).fadeOut();
+        torrents[movie_id].dismissed=1;
+        total_dismissed++;
+        saveStorage();
     }
 
     function updateDisplay () {
@@ -278,16 +308,21 @@
         var movieList = document.getElementById('movies');
 
         movieList.innerHTML= '';
+        total_dismissed=0;
 
         for (var movie_id in torrents) {
             var e = torrents[movie_id];
+
+            if (e.dismissed) {
+                total_dismissed++;
+                continue;
+            }
 
             var d = document.createElement('li');
                 d.setAttribute("id","movie-" +  movie_id);
                 d.innerHTML = unescape(e.title) + " (" + e.year + ")";
 
             var n = document.createElement('div');
-                d.setAttribute("id","movie-status-" +  movie_id);
 
             var text;
 
@@ -295,28 +330,36 @@
                 text = "new";
             }
             else if (!  e.torrent_url) {
-                text = "no torrents found";
+                text = "<b>no</b> encontrado";
             }
             else if (!  e.transmission_hash && !e.transmission_duplicate) {
-                text = "torrent ready";
+                text = "encontrado";
             }
             else if (!  e.finished) {
-                text = "torrent started";
+                text = "descargado";
             } else {
-                text = "done!";
+                text = "listo!";
             }
+
+
+
+            var l = document.createElement('a');
+            l.setAttribute("href", "#" );
+            l.setAttribute("onclick", "hideTorrent("+ movie_id+")" );
+            l.setAttribute("class", "close" );
+            l.innerHTML = "X";
+            d.appendChild(l);
+
+            n.innerHTML = text;
 
             if (e.torrent_url &&  config.download) {
                 
                 var l = document.createElement('a');
                 l.setAttribute("href", e.torrent_url );
                 l.setAttribute("target", "_blank" );
-                l.innerHTML = "Bajar";
-                d.appendChild(l);
+                l.innerHTML = " Bajar";
+                n.appendChild(l);
             }
-
-
-            n.innerHTML = text;
 
             d.appendChild(n);
 
@@ -342,20 +385,22 @@
 
     function refreshTorrents() {
 
-        status("buscando torrents");
+        log("buscando torrents");
 
         for (var i in torrents) {
             var e = torrents[i];
 
-//status(e.torrent_url);            
+            if (e.dismissed) continue;
+
+//log(e.torrent_url);            
             if (! e.torrent_url) {
-//status("in");            
+//log("in");            
                 getTPB(i, e.title,e.year);
             }
 //DEBUG
 //break;
         }
-        status('');
+        log('');
     }
 
 
@@ -365,6 +410,9 @@
 
         for (var i in torrents) {
             var e = torrents[i];
+            if (e.dismissed) continue;
+
+
             e.transmission_hash      = null;
             e.transmission_duplicate = null;
         }
@@ -375,15 +423,19 @@
     function updateTransmission() {
 
         if ( config.transmission) {
+            status("Actualizando Transmission");
             for (var i in torrents) {
                 var e = torrents[i];
+
+
+                if (e.dismissed) continue;
 
                 if (! e.transmission_hash && ! e.transmission_duplicate) {
                     addTorrent(e, 1);
                 }
 
 
-                status("");
+                log("");
             }
         }
     }
@@ -397,13 +449,15 @@
             for (var i in torrents) {
                     var e = torrents[i];
 
+                    if (e.dismissed) continue;
+
                     if (! e.utorrent_ok ) {
                         addUTorrent(e, 1);
                     }
             }
 
         })
-        .error(function() { status("error con utorrent"); })
+        .error(function() { log("error con utorrent"); })
     }
 
 
@@ -411,8 +465,7 @@
 
         if ( config.utorrent) {
 
-            status("actualizando utorrent");
-
+            status("Actualizando uTorrent");
             getUTokens();
 
         }
@@ -423,16 +476,20 @@
 
     function getScheduled(id) {
 
-        status("contactando Cinemaki...");
+        status("Contactando Cinemaki...");
 
         $.get(
-            "http://www.cinemaki.com.ar/scheduled/" + id  + "/limit/" + config.concurrent,
+            "http://www.cinemaki.com.ar/scheduled/" + id  
+                    + "/limit/" + config.concurrent 
+                    + "/start/" + total_dismissed ,
             function(data) {
 
-                status("procesando Cinemaki");
+                log("procesando Cinemaki");
+
+
                 var scheduled = jQuery.parseJSON(data);
 
-                status("Cinemaki:" + scheduled.movies.length + " pelis en agenda"); 
+                status("Traje " + scheduled.movies.length + " pelis en tu agenda"); 
 
                 updateDisplay();
 
@@ -440,7 +497,9 @@
 
                 saveStorage();
 
+                status("Buscando torrents");
                 refreshTorrents();
+
                 updateTransmission();
                 updateUtorrent();
             }
@@ -485,12 +544,12 @@
 
         if (t) {
             torrents = JSON.parse(t);
+            updateDisplay();
         }
         else  {
             torrents = new Object;
         }
 
-        status("iniciando");
         getScheduled(config.ck_id);
     }
 </script>
