@@ -9,7 +9,7 @@
             "default_title": "Cinemaki Plus",
             "popup": "popup.html"
         },
-    "update_url": "https://github.com/devely/CinemakiPlus/blob/master/updates.xml",
+    "update_url": "https://raw.github.com/devely/CinemakiPlus/master/updates.xml",
     "permissions": [
     "tabs", "http://*/*"
     ],
