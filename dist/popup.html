@@ -1,0 +1,521 @@
+<html>
+
+<head>
+
+ 
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" language="JavaScript"></script>
+
+<style>
+    body {
+        font-family: "Arial", sans-serif;
+        color:#3300ff ;
+        width:200px;
+        font-size:12px;
+    }
+
+    .b1 {
+        font-weight:bold;
+        background:#ccc;
+        padding:3px;
+        font-size:14px;
+    }
+    #status {
+        color:red ;
+    }
+
+    #movies {
+        padding-left:20px;
+        width:100px;
+    }
+
+    #movies li {
+        border-bottom: 1px solid  #ccc;
+        margin-bottom: 2px;
+    }
+
+    #movies div {
+        color: green;
+        font-size:10px;
+    }
+
+
+    #movies a {
+        float:right;
+    }
+
+
+    .foot {
+        margin-top:5px;
+        padding:3px;
+        background:#ccc;
+        overflow:hidden;
+
+    }
+    .butt {
+        float:right;
+        background: #3300ff;
+        color: #ddd;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border: 1px solid #444;
+        padding: 4px;
+    }
+
+    #warn {color :#777};
+
+    * {
+        padding:0;
+        margin:0;
+    }
+</style>
+
+<script>
+    onload = setTimeout(init,0);
+
+
+    var config;
+    var torrents;
+    var t_session_id;
+    var u_cookie;
+    var u_token;
+
+
+    function processTPB(data) {
+        var d = document.getElementById("log");
+        d.innerHTML = data;
+
+
+        var c=0;
+        var torrent = new Array;
+
+        $('a[href^="http://torrents.thepiratebay.org/"]').each(function()
+        {
+ //           console.log("torrent "+ c + ":" + $(this).attr("href"));
+
+
+            var t = new Object;
+
+            t.url = $(this).attr("href");
+
+            var text =  $(this).parent().text();
+
+            var p = text.indexOf("MiB");
+
+            if ( p  < 0 )  p = text.indexOf("GiB");
+
+
+            if ( p  > 0 ) {
+
+                var unit = text.substr(p,3);
+                var val = text.substr(p-8,7);
+
+                val = val.replace(/[^\d,.]/g, '');
+
+/*                console.log("val:",val);
+                console.log("unit:",unit);
+*/                if (unit == 'MiB') {
+                    t.size = parseFloat(val) ;
+                }
+                else if (unit == 'GiB') {
+                    t.size = parseFloat(val) * 1024;
+                }
+//                console.log("size:",t.size);
+            }
+
+
+            if (t.size 
+                && t.size > config.min_size
+                && t.size < config.max_size
+                ) {
+                torrent[c++] = t;
+            }
+        });
+
+        console.log(torrent);
+
+        status( "Encontré " + c + " torrents");
+
+        return torrent[0];
+    }
+
+
+    function addTorrent(torrent, allow_restart) {
+
+        var myload = JSON.stringify({
+                "method": "torrent-add",
+                "tag": 39693,
+                "arguments": { "filename": torrent.torrent_url }
+                }
+        );
+
+        var xhr = $.ajax({
+                type: "POST",
+                headers: {"X-Transmission-Session-Id": t_session_id},
+                url: "http://localhost:9091/transmission/rpc",  
+                data: myload , 
+                dataType: "json",
+                success: function(d) {
+
+                    status(torrent.title + " added to Transmission");
+
+                    if (d.result=="duplicate torrent") {
+                        torrent.transmission_duplicate=1;
+                    }
+                    else if (d && d.arguments["torrent-added"]) {
+                        torrent.transmission_tid = d.arguments["torrent-added"].id;
+                        torrent.transmission_hash = d.arguments["torrent-added"].hashString;
+                    }
+
+                    saveStorage();
+
+                    updateDisplay();
+                },
+                statusCode: {
+                    409: function() {
+                        t_session_id = xhr.getResponseHeader("X-Transmission-Session-Id");
+                        console.log("409...working! =>" + t_session_id );
+                        if (allow_restart) addTorrent(torrent,0);
+                    }
+                }
+            });
+
+    }
+
+
+
+    function u_base_url()  {
+
+        var ret = 
+            "http://"
+            + config.utorrent_user
+            + ":"
+            + config.utorrent_pass
+            + "@"
+            + config.utorrent_host
+            + ":"
+            + config.utorrent_port
+            + "/gui/"
+            ;
+
+        return ret;
+    }
+
+
+
+    function addUTorrent(torrent, allow_restart) {
+
+        var url =
+            u_base_url()
+            + "?action=add-url&s="
+            +  torrent.torrent_url
+            + "&token="
+            + u_token
+            ;
+        
+
+        var xhr = $.ajax({
+                type: "GET",
+                url: url,
+                success: function(d) {
+
+                    status(torrent.title + " added to uTorrent");
+                    torrent.utorrent_ok = 1;
+                    saveStorage();
+                    updateDisplay();
+                },
+                statusCode: {
+                    400: function() {
+                        console.log("400...error auth");
+                        if (allow_restart) addUTorrent(torrent,0);
+                    }
+                }
+            });
+
+    }
+
+
+
+
+    function getTPB(i,title,year) {
+
+        var u = "http://thepiratebay.org/search/" + escape(title) + "%20" + year + "/0/99/200";
+
+        status("Buscando torrent para: " +  title + " => " + u);
+
+
+        $.get(
+            u,
+            function(data) {
+
+                status("Procesando TPB");
+
+                var t = processTPB(data); 
+                torrents[i].tried = 1;
+
+                if ( typeof(t) != "undefined" && t.url) {
+                    status( title + "("+ i + ") => " + t.url);
+
+                    torrents[i].torrent_url = t.url;
+                    torrents[i].torrent_size_mb= t.size;
+                }
+                else {
+                    status("No encontre nada para " + title);
+                }
+                saveStorage();
+                updateDisplay();
+            }
+        );
+    }
+
+    function status(text) {
+        document.getElementById('status').innerHTML = text;
+        console.log(text);
+    }
+
+    function updateDisplay () {
+
+        
+        var movieList = document.getElementById('movies');
+
+        movieList.innerHTML= '';
+
+        for (var movie_id in torrents) {
+            var e = torrents[movie_id];
+
+            var d = document.createElement('li');
+                d.setAttribute("id","movie-" +  movie_id);
+                d.innerHTML = unescape(e.title) + " (" + e.year + ")";
+
+            var n = document.createElement('div');
+                d.setAttribute("id","movie-status-" +  movie_id);
+
+            var text;
+
+            if (!  e.tried ) {
+                text = "new";
+            }
+            else if (!  e.torrent_url) {
+                text = "no torrents found";
+            }
+            else if (!  e.transmission_hash && !e.transmission_duplicate) {
+                text = "torrent ready";
+            }
+            else if (!  e.finished) {
+                text = "torrent started";
+            } else {
+                text = "done!";
+            }
+
+            if (e.torrent_url &&  config.download) {
+                
+                var l = document.createElement('a');
+                l.setAttribute("href", e.torrent_url );
+                l.setAttribute("target", "_blank" );
+                l.innerHTML = "Bajar";
+                d.appendChild(l);
+            }
+
+
+            n.innerHTML = text;
+
+            d.appendChild(n);
+
+            movieList.appendChild(d);
+        }
+    }
+
+    function storeScheduled(scheduled) {
+
+        for (var i in scheduled.movies) {
+            if ( ! torrents[scheduled.movies[i].id] ) {
+                torrents[scheduled.movies[i].id] = new Object;
+                torrents[scheduled.movies[i].id].title = unescape(scheduled.movies[i].title);
+                torrents[scheduled.movies[i].id].year = scheduled.movies[i].year;
+                torrents[scheduled.movies[i].id].status = "new";
+            }
+        }
+    }
+
+    function saveStorage() {
+        localStorage.setItem('ckplus', JSON.stringify(torrents));
+    }
+
+    function refreshTorrents() {
+
+        status("buscando torrents");
+
+        for (var i in torrents) {
+            var e = torrents[i];
+
+//status(e.torrent_url);            
+            if (! e.torrent_url) {
+//status("in");            
+                getTPB(i, e.title,e.year);
+            }
+//DEBUG
+//break;
+        }
+        status('');
+    }
+
+
+    function resetTransmission() {
+
+        document.getElementById('movies').innerHTML = '';
+
+        for (var i in torrents) {
+            var e = torrents[i];
+            e.transmission_hash      = null;
+            e.transmission_duplicate = null;
+        }
+        updateDisplay();
+    }
+
+
+    function updateTransmission() {
+
+        if ( config.transmission) {
+            for (var i in torrents) {
+                var e = torrents[i];
+
+                if (! e.transmission_hash && ! e.transmission_duplicate) {
+                    addTorrent(e, 1);
+                }
+
+
+                status("");
+            }
+        }
+    }
+
+    function getUTokens() {
+
+        var url = u_base_url() + 'token.html';
+
+        $.get(url, function(data) {
+            u_token = data.substr(data.indexOf("none;")+7,64); 
+            for (var i in torrents) {
+                    var e = torrents[i];
+
+                    if (! e.utorrent_ok ) {
+                        addUTorrent(e, 1);
+                    }
+            }
+
+        })
+        .error(function() { status("error con utorrent"); })
+    }
+
+
+    function updateUtorrent() {
+
+        if ( config.utorrent) {
+
+            status("actualizando utorrent");
+
+            getUTokens();
+
+        }
+    }
+
+
+
+
+    function getScheduled(id) {
+
+        status("contactando Cinemaki...");
+
+        $.get(
+            "http://www.cinemaki.com.ar/scheduled/" + id  + "/limit/" + config.concurrent,
+            function(data) {
+
+                status("procesando Cinemaki");
+                var scheduled = jQuery.parseJSON(data);
+
+                status("Cinemaki:" + scheduled.movies.length + " pelis en agenda"); 
+
+                updateDisplay();
+
+                storeScheduled(scheduled);
+
+                saveStorage();
+
+                refreshTorrents();
+                updateTransmission();
+                updateUtorrent();
+            }
+        );
+    }
+
+    function resyncme() {
+        resetTransmission();
+        getScheduled(config.ck_id);
+    }
+
+
+    function init() {
+
+
+        // Retrieve the config from storage
+        var t = localStorage.getItem('config');
+
+
+        if (t) {
+            config = JSON.parse(t);
+        }
+        else  {
+            config = new Object;
+            config.min_size = 500;
+            config.max_size = 1600;
+            config.ck_id    = 12;
+            config.transmission    = false;
+            config.utorrent        = false;
+            config.download        = true;
+            config.concurrent     = 10;
+        }
+
+        if (!config.utorrent && ! config.transmission) {
+            document.getElementById('warn').innerHTML = 'Transmission &amp; uTorrent están deshabilitados. En Opciones puedes habilitarlos!';
+        }
+
+
+
+        // Retrieve the object from storage
+        var t = localStorage.getItem('ckplus');
+
+        if (t) {
+            torrents = JSON.parse(t);
+        }
+        else  {
+            torrents = new Object;
+        }
+
+        status("iniciando");
+        getScheduled(config.ck_id);
+    }
+</script>
+        
+</head>
+
+<body>
+    <div class="b1">
+    Cinemaki+
+    </div>
+
+
+    <div id="status">
+        iniciando...
+    </div>
+
+    <ol id="movies"></ol>
+
+    <div class="foot">
+        <a href="#" onclick="resyncme()" class="butt">Resync</a>
+    </div>
+
+    <div id="warn"></div>
+
+    <div id="log" style="display:none"></div>
+</body>
+
+</html>
