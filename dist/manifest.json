@@ -1,0 +1,17 @@
+{
+    "name": "Cinemaki Plus",
+    "version": "1.0",
+    "description": "A Cinemaki queue downloader",
+    "icons": {"128": "icon.png"},
+    "browser_action": 
+        {
+            "default_icon": "browseraction.png",
+            "default_title": "Cinemaki Plus",
+            "popup": "popup.html"
+        },
+    "permissions": [
+    "tabs", "http://*/*"
+    ],
+    
+    "options_page": "options.html"
+}
