@@ -1,21 +1,35 @@
 <html>
 
 <head>
+<!--
+    1. bajar lista de pelis
+    2. cruzarla con localstorage
+    3. buscar torrents de las que no tengan
 
+    4. las que no tiene torrent van a una lista de texto abajo. 
+
+     
+-->
  
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" language="JavaScript"></script>
 
 <style>
+    h1 {
+        font-size:16px;
+        margin:10px 0;
+        text-transform: uppercase;
+    }
     body {
         font-family: "Arial", sans-serif;
         color:#555 ;
         width:200px;
         font-size:12px;
-        width:200px;
+        width:282px;
         overflow:hidden;
     }
+    #met { font-weight:bold}
     a {
-        text-decoration:none;
+        color:#666;
     }
 
     .b1 {
@@ -26,36 +40,38 @@
     }
     #status {
         color:red ;
+        font-weight:bold;
     }
 
     #movies {
-        padding-left:15px;
-        width:180px;
+        padding:0;
+        width:280px;
         overflow:hidden;
+        height: 422px;
     }
 
     #movies li {
-        border-bottom: 1px solid  #ccc;
-        margin-bottom: 2px;
+        float: left;
+        margin:1px;
+        padding:2px 1px;
+        width:66px;
+        height:135px;
+        overflow:hidden;
+        background:#ccc;
+        text-align:center;
     }
 
-    #movies div {
-        color: green;
-        font-size:10px;
-    }
-
-
-    #movies .close {
-        float:right;
-    }
 
 
     .foot {
-        margin-top:5px;
-        padding:3px;
-        background:#ccc;
+        margin-top:2px;
+        border-top:1px solid #999;
+        padding:2px;
         overflow:hidden;
 
+    }
+    .foot a {
+        text-decoration:none;
     }
     .butt {
         float:right;
@@ -65,6 +81,27 @@
         -webkit-border-radius: 4px;
         border: 1px solid #444;
         padding: 4px;
+    }
+
+    .butt2 {
+        float:left;
+        background: #444;
+        color: white;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        padding: 3px;
+        margin:2px auto;
+        text-align:center;
+        width:55px;
+        text-decoration:none;
+        height:15px;
+        overflow:hidden;
+    }
+
+    .nbutt2 {
+        height:25px;
+        overflow:hidden;
+        line-height:25px;
     }
 
     #warn {color :#777};
@@ -80,11 +117,12 @@
 
 
     var config;
-    var torrents;
+    var movie;
+    var movies_ids;
     var t_session_id;
     var u_cookie;
     var u_token;
-    var total_dismissed = 0;
+    var total_done = 0;
 
 
     function processTPB(data) {
@@ -158,6 +196,8 @@
                 }
         );
 
+        log("agregando a transmission " + myload);
+
         var xhr = $.ajax({
                 type: "POST",
                 headers: {"X-Transmission-Session-Id": t_session_id},
@@ -166,18 +206,25 @@
                 dataType: "json",
                 success: function(d) {
 
-//                    log(torrent.title + " added to Transmission");
+                    log(torrent.title + " added to Transmission " + d.result );
 
                     if (d.result=="duplicate torrent") {
                         torrent.transmission_duplicate=1;
+                        torrent.done = 1;
+                        status("torrent duplicado: " + torrent.title);
+                    }
+                    else if (d.result.match(/404/)) {
+                        status("error en torrent :-( : " + torrent.title);
+                        torrent.done = 1;
                     }
                     else if (d && d.arguments["torrent-added"]) {
+                        status("torrent agregado!! :-) " + torrent.title);
                         torrent.transmission_tid = d.arguments["torrent-added"].id;
                         torrent.transmission_hash = d.arguments["torrent-added"].hashString;
+                        torrent.done = 1;
                     }
 
                     saveStorage();
-
                     updateDisplay();
                 },
                 statusCode: {
@@ -212,12 +259,12 @@
 
 
 
-    function addUTorrent(torrent, allow_restart) {
+    function addUTorrent(m, allow_restart) {
 
         var url =
             u_base_url()
             + "?action=add-url&s="
-            +  torrent.torrent_url
+            +  m.torrent_url
             + "&token="
             + u_token
             ;
@@ -228,8 +275,8 @@
                 url: url,
                 success: function(d) {
 
-//                    log(torrent.title + " added to uTorrent");
-                    torrent.utorrent_ok = 1;
+                    log(m.title + " added to uTorrent");
+                    m.done = 1;
                     saveStorage();
                     updateDisplay();
                 },
@@ -238,6 +285,9 @@
                         console.log("400...error auth");
                         if (allow_restart) addUTorrent(torrent,0);
                     }
+                },
+                error: function() {
+                        status("Falla al agregar a uTorrent. Revisa las opciones");
                 }
             });
 
@@ -260,16 +310,17 @@
 //                log("Procesando TPB");
 
                 var t = processTPB(data); 
-                torrents[i].tried = 1;
+                movie[i].tried = 1;
 
                 if ( typeof(t) != "undefined" && t.url) {
 //                    log( title + "("+ i + ") => " + t.url);
 
-                    torrents[i].torrent_url = t.url;
-                    torrents[i].torrent_size_mb= t.size;
+                    movie[i].torrent_url = t.url;
+                    movie[i].torrent_size_mb= t.size;
+
+
                 }
                 else {
-                    log("No encontre nada para " + title);
                 }
                 saveStorage();
                 updateDisplay();
@@ -291,16 +342,30 @@
 
         setTimeout(function() {
             status.innerHTML = "";
-        }, 500);
+        }, 4000);
     }
 
     function hideTorrent(movie_id) {
 
         $("#movie-"+movie_id).fadeOut();
-        torrents[movie_id].dismissed=1;
-        total_dismissed++;
+        movie[movie_id].done=1;
+        total_done++;
         saveStorage();
     }
+
+    function download2(movie_id) {
+
+        $("#movie-" +  movie_id).fadeOut('slow');
+
+
+        log("download de movie_id: " + movie_id);
+
+        if (config.utorrent) add1_Utorrent(movie_id);
+        if (config.transmission) add1_Transmission(movie_id);
+        saveStorage();
+    }
+
+
 
     function updateDisplay () {
 
@@ -308,95 +373,121 @@
         var movieList = document.getElementById('movies');
 
         movieList.innerHTML= '';
-        total_dismissed=0;
+        total_done=0;
 
-        for (var movie_id in torrents) {
-            var e = torrents[movie_id];
+        for(var i=0,len = movies_ids.length; movie_id=movies_ids[i], i<len; i++) {
+        
+            var e = movie[movie_id];
 
-            if (e.dismissed) {
-                total_dismissed++;
+            if (e.done) {
+                total_done++;
                 continue;
             }
 
             var d = document.createElement('li');
-                d.setAttribute("id","movie-" +  movie_id);
-                d.innerHTML = unescape(e.title) + " (" + e.year + ")";
-
-            var n = document.createElement('div');
-
-            var text;
-
-            if (!  e.tried ) {
-                text = "new";
-            }
-            else if (!  e.torrent_url) {
-                text = "<b>no</b> encontrado";
-            }
-            else if (!  e.transmission_hash && !e.transmission_duplicate) {
-                text = "encontrado";
-            }
-            else if (!  e.finished) {
-                text = "descargado";
-            } else {
-                text = "listo!";
-            }
+            d.setAttribute("id","movie-" +  movie_id);
 
 
 
-            var l = document.createElement('a');
-            l.setAttribute("href", "#" );
-            l.setAttribute("onclick", "hideTorrent("+ movie_id+")" );
-            l.setAttribute("class", "close" );
-            l.innerHTML = "X";
-            d.appendChild(l);
-
-            n.innerHTML = text;
-
-            if (e.torrent_url &&  config.download) {
-                
                 var l = document.createElement('a');
-                l.setAttribute("href", e.torrent_url );
+                l.setAttribute("href", e.url );
                 l.setAttribute("target", "_blank" );
-                l.innerHTML = " Bajar";
-                n.appendChild(l);
+
+
+                var title = unescape(e.title) + " (" + e.year + ")";
+                var img = document.createElement('img');
+                var txt = e.title + " | en agenda desde hace " + e.when;
+                img.setAttribute('src',e.img);
+                img.setAttribute('title',txt);
+                img.setAttribute('alt',txt);
+                img.setAttribute('height',"96px");
+                img.setAttribute('width',"64px");
+                l.appendChild(img);
+            d.appendChild(l);
+                 
+
+            if (e.torrent_url) {
+                var l2 = document.createElement('a');
+
+                l2.setAttribute("id", "d" +  movie_id);
+                l2.setAttribute("class","h");
+
+                if (config.download) {
+                    l2.setAttribute("href", e.torrent_url);
+                    l2.setAttribute("target", "_blank" );
+                    l2.setAttribute("onclick", "movie["+movie_id+"].done=1" );
+                }
+                else {
+                    l2.setAttribute("href", "#");
+                    l2.setAttribute("onclick", "download2("+ movie_id+")" );
+                }
+
+                l2.setAttribute("class", "butt2" );
+                l2.innerHTML = "Bajar";
+                d.appendChild(l2);
+            }
+            else {
+                var l2 = document.createElement('div');
+                l2.setAttribute("class", "nbutt2" );
+                l2.innerHTML = "N / D";
+                d.appendChild(l2);
             }
 
-            d.appendChild(n);
+                var l2 = document.createElement('a');
+                l2 = document.createElement('a');
+                l2.setAttribute("href", "#" );
+                l2.setAttribute("onclick", "hideTorrent("+ movie_id+")" );
+                l2.setAttribute("class", "butt3" );
+                l2.innerHTML = "Ocultar";
+            d.appendChild(l2);
+
 
             movieList.appendChild(d);
+
         }
+
     }
 
     function storeScheduled(scheduled) {
 
+        movies_ids = new Array();
         for (var i in scheduled.movies) {
-            if ( ! torrents[scheduled.movies[i].id] ) {
-                torrents[scheduled.movies[i].id] = new Object;
-                torrents[scheduled.movies[i].id].title = unescape(scheduled.movies[i].title);
-                torrents[scheduled.movies[i].id].year = scheduled.movies[i].year;
-                torrents[scheduled.movies[i].id].status = "new";
+
+            var e = scheduled.movies[i];
+
+            if ( ! movie[e.id] ) {
+
+                movie[e.id]        = new Object;
+                movie[e.id].title  = unescape(e.title);
+                movie[e.id].year   = e.year;
+                movie[e.id].status = "nueva";
+                movie[e.id].url    = e.url;
+                movie[e.id].img    = e.img;
+                movie[e.id].when   = e.when;
             }
+
+            movies_ids.push(e.id);
         }
     }
 
     function saveStorage() {
-        localStorage.setItem('ckplus', JSON.stringify(torrents));
+        localStorage.setItem('ckplus', JSON.stringify(movie));
     }
 
     function refreshTorrents() {
 
         log("buscando torrents");
 
-        for (var i in torrents) {
-            var e = torrents[i];
+        for(var i=0,len=movies_ids.length; movie_id=movies_ids[i], i<len; i++) {
+            var e = movie[movie_id];
 
-            if (e.dismissed) continue;
+            if (e.done) continue;
 
 //log(e.torrent_url);            
-            if (! e.torrent_url) {
-//log("in");            
-                getTPB(i, e.title,e.year);
+            if (! e.torrent_url && ! e.tried) {
+                getTPB(movie_id, e.title,e.year);
             }
+
 //DEBUG
 //break;
         }
@@ -408,9 +499,9 @@
 
         document.getElementById('movies').innerHTML = '';
 
-        for (var i in torrents) {
-            var e = torrents[i];
-            if (e.dismissed) continue;
+        for (var i in movie) {
+            var e = movie[i];
+            if (e.done) continue;
 
 
             e.transmission_hash      = null;
@@ -424,11 +515,11 @@
 
         if ( config.transmission) {
             status("Actualizando Transmission");
-            for (var i in torrents) {
-                var e = torrents[i];
+            for (var i in movie) {
+                var e = movie[i];
 
 
-                if (e.dismissed) continue;
+                if (e.done) continue;
 
                 if (! e.transmission_hash && ! e.transmission_duplicate) {
                     addTorrent(e, 1);
@@ -446,10 +537,10 @@
 
         $.get(url, function(data) {
             u_token = data.substr(data.indexOf("none;")+7,64); 
-            for (var i in torrents) {
-                    var e = torrents[i];
+            for (var i in movie) {
+                    var e = movie[i];
 
-                    if (e.dismissed) continue;
+                    if (e.done) continue;
 
                     if (! e.utorrent_ok ) {
                         addUTorrent(e, 1);
@@ -459,6 +550,29 @@
         })
         .error(function() { log("error con utorrent"); })
     }
+
+
+    function add1_Utorrent(movie_id) {
+
+        var url = u_base_url() + 'token.html';
+
+        $.get(url, function(data) {
+            u_token = data.substr(data.indexOf("none;")+7,64); 
+            addUTorrent(movie[movie_id], 1);
+        })
+        .error(function() { status("error con utorrent"); })
+    }
+
+
+    function add1_Transmission(movie_id) {
+
+        var e = movie[movie_id];
+
+        if (! e.transmission_hash && ! e.transmission_duplicate) {
+            addTorrent(e, 1);
+        }
+    }
+
 
 
     function updateUtorrent() {
@@ -480,8 +594,8 @@
 
         $.get(
             "http://www.cinemaki.com.ar/scheduled/" + id  
-                    + "/limit/" + config.concurrent 
-                    + "/start/" + total_dismissed ,
+                    + "/limit/24"
+                    + "/start/" + total_done ,
             function(data) {
 
                 log("procesando Cinemaki");
@@ -491,17 +605,17 @@
 
                 status("Traje " + scheduled.movies.length + " pelis en tu agenda"); 
 
-                updateDisplay();
 
                 storeScheduled(scheduled);
+                updateDisplay();
 
                 saveStorage();
 
                 status("Buscando torrents");
                 refreshTorrents();
 
-                updateTransmission();
-                updateUtorrent();
+//                updateTransmission();
+//                updateUtorrent();
             }
         );
     }
@@ -513,7 +627,6 @@
 
 
     function init() {
-
 
         // Retrieve the config from storage
         var t = localStorage.getItem('config');
@@ -533,22 +646,28 @@
             config.concurrent     = 10;
         }
 
-        if (!config.utorrent && ! config.transmission) {
-            document.getElementById('warn').innerHTML = 'Transmission &amp; uTorrent están deshabilitados. En Opciones puedes habilitarlos!';
-        }
-
-
 
         // Retrieve the object from storage
         var t = localStorage.getItem('ckplus');
 
         if (t) {
-            torrents = JSON.parse(t);
-            updateDisplay();
+            movie = JSON.parse(t);
         }
         else  {
-            torrents = new Object;
+            movie = new Object;
         }
+
+
+        if (config.utorrent) 
+            $("#met").html('uTorrent');
+
+        if (config.transmission) 
+            $("#met").html('Transmission');
+
+        if (config.download) 
+            $("#met").html('link a torrent');
+
+
 
         getScheduled(config.ck_id);
     }
@@ -557,23 +676,15 @@
 </head>
 
 <body>
-    <div class="b1">
-    Cinemaki+
-    </div>
-
-
-    <div id="status">
-        iniciando...
-    </div>
-
-    <ol id="movies"></ol>
+    <h1> Tu agenda CK </h1>
+        <ul id="movies"></ul>
 
     <div class="foot">
-        <a href="#" onclick="resyncme()" class="butt">Resync</a>
+        <a href="#" onclick="resyncme()" class="butt">Refrescar</a>
+        Método de descarga: <span id="met">ninguno</span>
+        <br>(se cambia en opciones)
     </div>
-
-    <div id="warn"></div>
-
+    <div id="status"> </div>
     <div id="log" style="display:none"></div>
 </body>
 
