@@ -19,6 +19,16 @@
         margin:10px 0;
         text-transform: uppercase;
     }
+    h2 {
+        font-size:14px;
+        margin:5px 0;
+    }
+
+    #disclaimer {
+        color: #999;
+        font-size:9px;
+    }
+
     body {
         font-family: "Arial", sans-serif;
         color:#555 ;
@@ -41,6 +51,8 @@
     #status {
         color:red ;
         font-weight:bold;
+        min-height:1.5em;
+
     }
 
     #movies {
@@ -59,6 +71,7 @@
         overflow:hidden;
         background:#ccc;
         text-align:center;
+        -webkit-border-radius: 4px;
     }
 
 
@@ -189,6 +202,9 @@
 
     function addTorrent(torrent, allow_restart) {
 
+
+        status("Hablando con Transmission...");
+
         var myload = JSON.stringify({
                 "method": "torrent-add",
                 "tag": 39693,
@@ -261,6 +277,7 @@
 
     function addUTorrent(m, allow_restart) {
 
+        status("Hablando con uTorrent...");
         var url =
             u_base_url()
             + "?action=add-url&s="
@@ -605,6 +622,8 @@
 
                 status("Traje " + scheduled.movies.length + " pelis en tu agenda"); 
 
+console.log(scheduled.user);
+                $("#user").html(scheduled.user);
 
                 storeScheduled(scheduled);
                 updateDisplay();
@@ -676,8 +695,13 @@
 </head>
 
 <body>
-    <h1> Tu agenda CK </h1>
-        <ul id="movies"></ul>
+    <h1> Tu agenda Cinemaki </h1>
+    <h2> Usuario: <span id="user">n/d</span> </h2>
+        <ul id="movies">
+        <b>Opss, nada por aquí. </b>
+        <p>
+        Definí tu agenda en <a href="cinemaki.com">Cinemaki.com</a>
+        Y luego configura tu ID de usuario en "Opciones"</ul>
 
     <div class="foot">
         <a href="#" onclick="resyncme()" class="butt">Refrescar</a>
@@ -685,6 +709,9 @@
         <br>(se cambia en opciones)
     </div>
     <div id="status"> </div>
+    <div id="disclaimer">
+    (*) Esta applicación no esta relaciona con Cinemaki.com, ni con sus propietarios
+    </div>
     <div id="log" style="display:none"></div>
 </body>
 

@@ -11,6 +11,22 @@
         width:200px;
         font-size:12px;
     }
+    .b {
+        background:#ccc;
+    }
+    .
+
+    table {
+        font-size:12px;
+    }
+    td {
+        padding:3px;
+    }
+    td {
+        border-bottom:1px solid #444;
+    }
+
+    .h { display:none}
 
     .b1 {
         font-weight:bold;
@@ -84,20 +100,58 @@
 
 <script type="text/javascript">
 
+function updateRadioStatus() {
+
+    $("input[type='radio']").parent().parent().removeClass('b');
+
+    if ($("input[name='downloadm']:checked").val() == 'transmission') {
+        $("#transmission_config").slideDown();
+        $("#utorrent_config").slideUp();
+        $("input[name='downloadm']:checked").parent().parent().addClass("b");
+    }
+    else if ($("input[@name='downloadm']:checked").val() == 'utorrent') {
+        $("#transmission_config").slideUp();
+        $("#utorrent_config").slideDown();
+        $("input[name='downloadm']:checked").parent().parent().addClass("b");
+    }
+    else {
+        $("#transmission_config").slideUp();
+        $("#utorrent_config").slideUp();
+        $("input[name='downloadm']:checked").parent().parent().addClass("b");
+    }
+
+}
+
+$( function() {
+    restore_options();
+    updateRadioStatus();
+    $("input[name='downloadm']").change(function(){
+        updateRadioStatus();
+    })
+});
+    
+
 // Saves options to localStorage.
 function save_options() {
 
     var config = new Object;
 
+
+    if ($("input[name='downloadm']:checked").val() == 'transmission') {
+        config.transmission=true;
+    } 
+    else if ($("input[@name='downloadm']:checked").val() == 'utorrent') {
+        config.utorrent=true;
+    }
+    else {
+        config.download=true;
+    }
+
     config.min_size     = parseInt( $("#min_size").val() );
     config.max_size     = parseInt( $("#max_size").val() );
     config.ck_id        = parseInt( $("#ck_id").val() );
-    config.concurrent   = parseInt( $("#concurrent").val() );
-    config.transmission         = $("#transmission").is(":checked");
+//    config.concurrent   = parseInt( $("#concurrent").val() );
     config.transmission_host     = $("#transmission_host").val();
-    config.utorrent         = $("#utorrent").is(":checked");
-
-    config.download         = $("#download").is(":checked");
 
     config.utorrent_host         = $("#utorrent_host").val();
     config.utorrent_port         = $("#utorrent_port").val();
@@ -140,7 +194,7 @@ function restore_options() {
             config.transmission_host    = '127.0.0.1';
             config.utorrent    = false;
             config.download    = true;
-            config.concurrent      = 10;
+//            config.concurrent      = 10;
             config.utorrent_host    = '127.0.0.1';
             config.utorrent_port    = '55972';
             config.utorrent_user    = 'admin';
@@ -150,21 +204,31 @@ function restore_options() {
         $("#min_size").val(config.min_size);
         $("#max_size").val(config.max_size);
         $("#ck_id").val(config.ck_id);
-        $("#concurrent").val(config.concurrent);
-        $("#transmission").attr("checked",config.transmission);
         $("#transmission_host").val(config.transmission_host);
 
-        $("#utorrent").attr("checked",config.utorrent);
-        $("#download").attr("checked",config.download);
         $("#utorrent_host").val(config.utorrent_host);
         $("#utorrent_port").val(config.utorrent_port);
         $("#utorrent_user").val(config.utorrent_user);
         $("#utorrent_pass").val(config.utorrent_pass);
+
+
+        if (config.transmission) {
+            $("input[value='transmission']").attr('checked',true);
+        } 
+        else if (config.utorrent ) {
+            $("input[value='utorrent']").attr('checked',true);
+        }
+        else {
+            $("input[value='download']").attr('checked',true);
+        }
+
+        updateRadioStatus();
+
 }
 
 </script>
 
-<body onload="restore_options()" style="background:#ccc">
+<body onload="" style="background:#ccc">
 
     <div class="d1">
 
@@ -174,35 +238,49 @@ function restore_options() {
         Tamaño mínimo (en MB) <input id="min_size" type="text">
         <br> Tamaño máximo (en MB)<input id="max_size" type="text">
 
+<!--
         <br>Cuantos Torrents juntos?<input id="concurrent" type="text">
-        <h2> Cinemaki</h2>
+-->        <h2> Cinemaki</h2>
         ID de usuario: <input id="ck_id" type="text">
 
         <h2> 
-        <input id="transmission" type="checkbox" value="on">
-        Intregración con <a href="http://transmissionbt.com" target="_blank">Transmission App</a>
+            Método de descarga
         </h2>
+
+        <table>
+        <tr>
+        <th>
+        <input name="downloadm" type="radio" value="transmission">
+        <td>
+        <a href="http://transmissionbt.com" target="_blank">Transmission App</a>
         (es necesario habilitar la interfase "remote" en Transmission)
-        <br> Host <input id="transmission_host" type="text">
+        <div class="h"  id="transmission_config">
+        <br>Host <input id="transmission_host" type="text">
+        </div>
 
-
-        <h2> 
-        <input id="utorrent" type="checkbox" value="on">
-        Intregración con <a href="http://www.utorrent.com/" target="_blank">uTorrent</a>
-        </h2>
-        (para esto es necesario habilitar la interfase "webui" en uTorrent)
+        <tr>
+        <th>
+        <input name="downloadm" type="radio" value="utorrent"
+        >
+        <td>
+        <a href="http://www.utorrent.com/" target="_blank">uTorrent</a>
+        (es necesario habilitar la interfase "webui" en uTorrent)
         <a href='http://www.utorrent.com/help/guides/webui'>como?</a>
-        <br> Host <input id="utorrent_host" type="text">
+
+        <div class="h" id="utorrent_config">
+        <br>Host <input id="utorrent_host" type="text">
         <br> Puerto <input id="utorrent_port" type="text">
         <br> User <input id="utorrent_user" type="text">
         <br> Password <input id="utorrent_pass" type="text">
+        </div>
 
 
-        <h2> 
-        
-        <input id="download" type="checkbox" value="on">
-        Mostrar link para descargar torrents </h2>
-
+        <tr>
+        <th>
+        <input name="downloadm" type="radio" value="download">
+        <td>
+            Sólo descarga de archivos de torrents 
+        </table>
 
         <div id="status"></div>
 
