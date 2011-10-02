@@ -76,7 +76,7 @@ function processTPB(data) {
 function addTorrent(torrent, allow_restart) {
 
 
-    status("Hablando con Transmission...");
+    status("Hablando con Transmission...","info");
 
     var myload = JSON.stringify({
             "method": "torrent-add",
@@ -100,14 +100,14 @@ function addTorrent(torrent, allow_restart) {
                 if (d.result=="duplicate torrent") {
                     torrent.transmission_duplicate=1;
                     torrent.done = 1;
-                    status("torrent duplicado: " + torrent.title);
+                    status("Torrent duplicado: " + torrent.title,"error");
                 }
                 else if (d.result.match(/404/)) {
-                    status("error en torrent :-( : " + torrent.title);
+                    status("Error en torrent :-( : " + torrent.title,"error");
                     torrent.done = 1;
                 }
                 else if (d && d.arguments["torrent-added"]) {
-                    status("torrent agregado!! :-) " + torrent.title);
+                    status("Torrent agregado!! :-) " + torrent.title, "success");
                     torrent.transmission_tid = d.arguments["torrent-added"].id;
                     torrent.transmission_hash = d.arguments["torrent-added"].hashString;
                     torrent.done = 1;
@@ -150,7 +150,7 @@ function u_base_url()  {
 
 function addUTorrent(m, allow_restart) {
 
-    status("Hablando con uTorrent...");
+    status("Hablando con uTorrent...","info");
     var url =
         u_base_url()
         + "?action=add-url&s="
@@ -176,7 +176,7 @@ function addUTorrent(m, allow_restart) {
             }
         },
         error: function() {
-            status("Falla al agregar a uTorrent. Revisa las opciones");
+            status("Falla al agregar a uTorrent. Revisa las opciones","error");
         }
     });
 }
@@ -220,7 +220,7 @@ function log(text) {
     //console.log(text);
 }
 
-function status(text) {
+/*function status(text) {
 
     log(text);
 
@@ -230,6 +230,23 @@ function status(text) {
 
     setTimeout(function() {
         status.innerHTML = "";
+    }, 4000);
+}*/
+
+function status(text, type) { // info, warning, error, success
+
+    log(text);
+    var type = typeof(type) != 'undefined' ? type : 'info';
+    
+    $("#status").removeClass().addClass("alert-message");
+
+    $("#status p").html(text);
+    $("#status").addClass(type).fadeIn();
+
+    setTimeout(function() {
+        $("#status").fadeOut('fast', function(){
+           $("#status").removeClass(type); 
+        });
     }, 4000);
 }
 
@@ -408,7 +425,7 @@ function resetTransmission() {
 function updateTransmission() {
 
     if ( config.transmission) {
-        status("Actualizando Transmission");
+        status("Actualizando Transmission...","info");
         for (var i in movie) {
             var e = movie[i];
 
@@ -454,7 +471,7 @@ function add1_Utorrent(movie_id) {
         u_token = data.substr(data.indexOf("none;")+7,64); 
         addUTorrent(movie[movie_id], 1);
     })
-    .error(function() { status("error con utorrent"); })
+    .error(function() { status("Error con uTorrent.","error"); })
 }
 
 
@@ -473,7 +490,7 @@ function updateUtorrent() {
 
     if ( config.utorrent) {
 
-        status("Actualizando uTorrent");
+        status("Actualizando uTorrent...","info");
         getUTokens();
 
     }
@@ -484,7 +501,7 @@ function updateUtorrent() {
 
 function getScheduled(id) {
 
-    status("Contactando Cinemaki...");
+    status("Contactando Cinemaki...","info");
 
     $.get(
         "http://www.cinemaki.com.ar/scheduled/" + id  
@@ -497,7 +514,7 @@ function getScheduled(id) {
 
             var scheduled = jQuery.parseJSON(data);
 
-            status("Traje " + scheduled.movies.length + " pelis en tu agenda"); 
+            status("Traje " + scheduled.movies.length + " pelis en tu agenda","success"); 
 
 console.log(scheduled.user);
             $("#user").html(scheduled.user);
@@ -507,7 +524,7 @@ console.log(scheduled.user);
 
             saveStorage();
 
-            status("Buscando torrents");
+            status("Buscando torrents...","info");
             refreshTorrents();
 
 //                updateTransmission();
@@ -571,10 +588,10 @@ function init() {
 $(document).ready(function() {
     $("ul#movies").delegate("li", {
       mouseenter: function() { 
-        $(this).children('.hide').addClass('active');
+        $(this).children('.close').addClass('active');
       },
       mouseleave: function () {
-        $(this).children('.hide').removeClass('active');
+        $(this).children('.close').removeClass('active');
       }
     });       
  });
