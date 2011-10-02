@@ -26,7 +26,6 @@ $( function() {
     $("input[name='downloadm']").change(function(){
         updateRadioStatus();
     });
-    find_user_id();
 });
     
 
@@ -57,8 +56,6 @@ function save_options() {
     config.utorrent_user         = $("#utorrent_user").val();
     config.utorrent_pass         = $("#utorrent_pass").val();
 
-    
-    log(config);
     window.localStorage.clear();
     localStorage.setItem('config', JSON.stringify(config));
     
@@ -68,12 +65,13 @@ function save_options() {
 
 // Restores select box state to saved value from localStorage.
 function restore_options() {
-
+    var t,
+        config;
 
     // Retrieve the object from storage
-    var t = localStorage.getItem('config');
+    t = localStorage.getItem('config');
 
-    var config = new Object;
+    config = new Object;
 
     if (t) {
         config = JSON.parse(t);
@@ -91,6 +89,7 @@ function restore_options() {
         config.utorrent_port    = '55972';
         config.utorrent_user    = 'admin';
         config.utorrent_pass    = '';
+        find_user_id();
     }
 
     $("#min_size").val(config.min_size);
@@ -119,7 +118,7 @@ function restore_options() {
 }
 
 function find_user_id() {
-    var src, user_id;
+    var src, user_id, user_name;
 
     status("Averiguando ID de CinemaKi!","info");
 
@@ -130,8 +129,13 @@ function find_user_id() {
                 src = $(this).attr('src');
                 user_id = src.match( /([0-9])+/g )[2];
             });
+            $('div#nav_bar_black_logged.fl div.r div.fl strong a b span', $(data)).each( function () {
+                user_name = $(this).html();
+            });
+
             if (is_int(user_id)) {
                 $("#ck_id").val(user_id);
+                $("#ck_username").val(user_name);
                 save_options();
             }
         }
@@ -147,7 +151,7 @@ function is_int(value){
 }
 
 function status(text, type) { // info, warning, error, success
-    var type = typeof(type) != 'undefined' ? type : 'info';
+    type = typeof(type) != 'undefined' ? type : 'info';
     
     $("#status").removeClass().addClass("alert-message");
 

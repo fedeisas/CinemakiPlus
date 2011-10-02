@@ -1,6 +1,3 @@
-onload = setTimeout(init,0);
-
-
 var config,
     movie,
     movies_ids,
@@ -29,102 +26,88 @@ function processTPB(data) {
     {
 //           console.log("torrent "+ c + ":" + $(this).attr("href"));
 
-        var t = new Object;
+        var t, 
+            text,
+            p,
+            unit,
+            val;
 
+        t = new Object;
         t.url = $(this).attr("href");
 
-        var text =  $(this).parent().text();
+        text =  $(this).parent().text();
 
-        var p = text.indexOf("MiB");
+        p = text.indexOf("MiB");
 
         if ( p  < 0 )  p = text.indexOf("GiB");
 
 
         if ( p  > 0 ) {
 
-            var unit = text.substr(p,3);
-            var val = text.substr(p-8,7);
+            unit = text.substr(p,3);
+            val = text.substr(p-8,7);
 
             val = val.replace(/[^\d,.]/g, '');
 
-/*                console.log("val:",val);
-            console.log("unit:",unit);
-*/                if (unit == 'MiB') {
+            if (unit == 'MiB') {
                 t.size = parseFloat(val) ;
-            }
-            else if (unit == 'GiB') {
+            } else if (unit == 'GiB') {
                 t.size = parseFloat(val) * 1024;
             }
-//                console.log("size:",t.size);
         }
 
 
-        if (t.size 
-            && t.size > config.min_size
-            && t.size < config.max_size
-            ) {
+        if ( t.size && t.size > config.min_size && t.size < config.max_size ) {
             torrent[c++] = t;
         }
     });
 
-    console.log( "Encontré " + c + " torrents");
+    log( "Encontré " + c + " torrents");
 
     return torrent[0];
 }
 
 
 function addTorrent(torrent, allow_restart) {
-
+    var xhr;
 
     status("Hablando con Transmission...","info");
 
-    var myload = JSON.stringify({
-            "method": "torrent-add",
-            "tag": 39693,
-            "arguments": { "filename": torrent.torrent_url }
+    xhr = $.ajax({
+        type: "POST",
+        headers: {"X-Transmission-Session-Id": t_session_id},
+        url: "http://localhost:9091/transmission/rpc",  
+        data: JSON.stringify({ "method": "torrent-add", "tag": 39693, "arguments": { "filename": torrent.torrent_url }}), 
+        dataType: "json",
+        success: function(d) {
+            log(torrent.title + " added to Transmission " + d.result );
+            if (d.result=="duplicate torrent") {
+                torrent.transmission_duplicate=1;
+                torrent.done = 1;
+                status("Torrent duplicado: " + torrent.title,"error");
             }
-    );
-
-    log("agregando a transmission " + myload);
-
-    var xhr = $.ajax({
-            type: "POST",
-            headers: {"X-Transmission-Session-Id": t_session_id},
-            url: "http://localhost:9091/transmission/rpc",  
-            data: myload , 
-            dataType: "json",
-            success: function(d) {
-
-                log(torrent.title + " added to Transmission " + d.result );
-
-                if (d.result=="duplicate torrent") {
-                    torrent.transmission_duplicate=1;
-                    torrent.done = 1;
-                    status("Torrent duplicado: " + torrent.title,"error");
-                }
-                else if (d.result.match(/404/)) {
-                    status("Error en torrent :-( : " + torrent.title,"error");
-                    torrent.done = 1;
-                }
-                else if (d && d.arguments["torrent-added"]) {
-                    status("Torrent agregado!! :-) " + torrent.title, "success");
-                    torrent.transmission_tid = d.arguments["torrent-added"].id;
-                    torrent.transmission_hash = d.arguments["torrent-added"].hashString;
-                    torrent.done = 1;
-                }
-
-                saveStorage();
-                updateDisplay();
-            },
-            statusCode: {
-                409: function() {
-                    t_session_id = xhr.getResponseHeader("X-Transmission-Session-Id");
-                    console.log("409...working! =>" + t_session_id );
-                    if (allow_restart) addTorrent(torrent,0);
-                }
+            else if (d.result.match(/404/)) {
+                status("Error en torrent :-( : " + torrent.title,"error");
+                torrent.done = 1;
             }
-        });
+            else if (d && d.arguments["torrent-added"]) {
+                status("Torrent agregado!! :-) " + torrent.title, "success");
+                torrent.transmission_tid = d.arguments["torrent-added"].id;
+                torrent.transmission_hash = d.arguments["torrent-added"].hashString;
+                torrent.done = 1;
+            }
 
+            saveStorage();
+            updateDisplay();
+        },
+        statusCode: {
+            409: function() {
+                t_session_id = xhr.getResponseHeader("X-Transmission-Session-Id");
+                console.log("409...working! =>" + t_session_id );
+                if (allow_restart) addTorrent(torrent,0);
+            }
+        }
+    });
 }
 
 
@@ -188,27 +171,15 @@ function getTPB(i,title,year) {
 
     var u = "http://thepiratebay.org/search/" + escape(title) + "%20" + year + "/0/99/200";
 
-//        log("Buscando torrent para: " +  title + " => " + u);
-
-
     $.get(
         u,
         function(data) {
-
-//                log("Procesando TPB");
-
             var t = processTPB(data); 
             movie[i].tried = 1;
 
             if ( typeof(t) != "undefined" && t.url) {
-//                    log( title + "("+ i + ") => " + t.url);
-
                 movie[i].torrent_url = t.url;
                 movie[i].torrent_size_mb= t.size;
-
-
-            }
-            else {
             }
             saveStorage();
             updateDisplay();
@@ -217,13 +188,16 @@ function getTPB(i,title,year) {
 }
 
 function log(text) {
-    //console.log(text);
+    console.log(text);
 }
 
 function status(text, type) { // info, warning, error, success
 
     log(text);
-    var type = typeof(type) != 'undefined' ? type : 'info';
+
+    type = typeof(type) != 'undefined' ? type : 'info';
+
+    $("span.loader").show();
     
     $("#status").removeClass().addClass("alert-message");
 
@@ -233,6 +207,7 @@ function status(text, type) { // info, warning, error, success
     setTimeout(function() {
         $("#status").fadeOut('fast', function(){
            $("#status").removeClass(type); 
+           $("span.loader").hide();
         });
     }, 4000);
 }
@@ -260,34 +235,37 @@ function download2(movie_id) {
 
 
 function updateDisplay () {
+    var i,
+        movies,
+        e;
 
     $("#movies").empty();
 
-    total_done=0;
+    total_done = 0;
 
-    var movies = [];
+    movies = [];
 
-    for(var i=0,len = movies_ids.length; movie_id=movies_ids[i], i<len; i++) {
-    
-        var e = movie[movie_id];
+    for(i = 0, len = movies_ids.length; movie_id = movies_ids[i], i<len; i++) {
+
+        e = movie[movie_id];
         e.movie_id = movie_id;
 
         if (e.done) {
             total_done++;
             continue;
         }
-
         movies.push(e);
     }
+
     $("#movieTemplate").tmpl(movies).appendTo("#movies");
 }
 
 function storeScheduled(scheduled) {
-
+    var i, e;
     movies_ids = new Array();
-    for (var i in scheduled.movies) {
+    for (i in scheduled.movies) {
 
-        var e = scheduled.movies[i];
+        e = scheduled.movies[i];
 
         if ( ! movie[e.id] ) {
 
@@ -298,6 +276,7 @@ function storeScheduled(scheduled) {
             movie[e.id].url    = e.url;
             movie[e.id].img    = e.img;
             movie[e.id].when   = e.when;
+            movie[e.id].movie_id   = e.id;
         }
 
         movies_ids.push(e.id);
@@ -310,33 +289,32 @@ function saveStorage() {
 
 function refreshTorrents() {
 
+    var i,
+        e;
+
     log("buscando torrents");
 
-    for(var i=0,len=movies_ids.length; movie_id=movies_ids[i], i<len; i++) {
-        var e = movie[movie_id];
+    for(i = 0, len = movies_ids.length; movie_id = movies_ids[i], i < len; i++) {
+        e = movie[movie_id];
 
         if (e.done) continue;
 
-//log(e.torrent_url);            
         if (! e.torrent_url && ! e.tried) {
             getTPB(movie_id, e.title,e.year);
         }
-
-//DEBUG
-//break;
     }
-    log('');
 }
 
 
 function resetTransmission() {
+    var i,
+        e;
 
-    document.getElementById('movies').innerHTML = '';
+    $("#movies").empty();
 
-    for (var i in movie) {
-        var e = movie[i];
+    for (i in movie) {
+        e = movie[i];
         if (e.done) continue;
-
 
         e.transmission_hash      = null;
         e.transmission_duplicate = null;
@@ -346,43 +324,44 @@ function resetTransmission() {
 
 
 function updateTransmission() {
+    var i,
+        e;
 
     if ( config.transmission) {
         status("Actualizando Transmission...","info");
-        for (var i in movie) {
-            var e = movie[i];
-
-
+        for (i in movie) {
+            e = movie[i];
             if (e.done) continue;
 
             if (! e.transmission_hash && ! e.transmission_duplicate) {
                 addTorrent(e, 1);
             }
-
-
-            log("");
         }
     }
 }
 
 function getUTokens() {
+    var url,
+        i,
+        e;
 
-    var url = u_base_url() + 'token.html';
+    url = u_base_url() + 'token.html';
 
-    $.get(url, function(data) {
-        u_token = data.substr(data.indexOf("none;")+7,64); 
-        for (var i in movie) {
-                var e = movie[i];
-
+    $.get(
+        url, 
+        function(data) {
+            u_token = data.substr(data.indexOf("none;")+7,64); 
+            for (i in movie) {
+                e = movie[i];
+                
                 if (e.done) continue;
 
                 if (! e.utorrent_ok ) {
                     addUTorrent(e, 1);
                 }
-        }
+            }
 
-    })
-    .error(function() { log("error con utorrent"); })
+        }).error(function() { log("error con utorrent"); });
 }
 
 
@@ -393,8 +372,7 @@ function add1_Utorrent(movie_id) {
     $.get(url, function(data) {
         u_token = data.substr(data.indexOf("none;")+7,64); 
         addUTorrent(movie[movie_id], 1);
-    })
-    .error(function() { status("Error con uTorrent.","error"); })
+    }).error(function() { status("Error con uTorrent.","error"); });
 }
 
 
@@ -484,7 +462,7 @@ function init() {
 
 
     // Retrieve the object from storage
-    var t = localStorage.getItem('ckplus');
+    t = localStorage.getItem('ckplus');
 
     if (t) {
         movie = JSON.parse(t);
@@ -503,12 +481,11 @@ function init() {
     if (config.download) 
         $("#met").html('link a torrent');
 
-
-
     getScheduled(config.ck_id);
 }
 
 $(document).ready(function() {
+    
     $("ul#movies").delegate("li", {
       mouseenter: function() { 
         $(this).children('.close').addClass('active');
@@ -516,5 +493,9 @@ $(document).ready(function() {
       mouseleave: function () {
         $(this).children('.close').removeClass('active');
       }
-    });       
+    });
+
+    $("a.options").attr('href',chrome.extension.getURL("options.html"));
+
+    init();
  });

@@ -17,7 +17,7 @@
                 <h1>Cinemaki Plus <small>configuración</small></h1>
             </div>
 
-            <div id="status" class="alert-message">
+            <div id="status" class="alert-message" style="display:none;">
                 <p></p>
             </div>
 
@@ -26,7 +26,7 @@
             <div class="clearfix">
                 <label>Tamaño mínimo</label>
                 <div class="input">
-                    <input type="text" name="min_size" id="min_size" class="span2">
+                    <input type="text" name="min_size" id="min_size" class="span3">
                     <span class="help-inline">en MB</span>
                 </div>
             </div>
@@ -34,7 +34,7 @@
             <div class="clearfix">
                 <label>Tamaño máximo</label>
                 <div class="input">
-                    <input type="text" name="max_size" id="max_size" class="span2">
+                    <input type="text" name="max_size" id="max_size" class="span3">
                     <span class="help-inline">en MB</span>
                 </div>
             </div>
@@ -44,7 +44,15 @@
             <div class="clearfix">
                 <label>ID de usuario</label>
                 <div class="input">
-                    <input type="text" name="ck_id" id="ck_id" class="span2">
+                    <input type="text" name="ck_id" id="ck_id" class="span3">
+                    <span class="help-inline"><a style="cursor:pointer;" onclick="find_user_id()">(?)</a></span>
+                </div>
+            </div>
+
+            <div class="clearfix">
+                <label>Nombre de usuario</label>
+                <div class="input">
+                    <input type="text" disabled="" name="ck_username" id="ck_username" class="span3 disabled">
                 </div>
             </div>
 

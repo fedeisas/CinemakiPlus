@@ -23,33 +23,37 @@
 
     <body>
         <div class="page-header">
-            <h1> Tu agenda Cinemaki </h1>
+            <span class="loader"></span>
+            <h1>Tu agenda Cinemaki</h1>
         </div>
 
         <!--<h2> Usuario: <span id="user">n/d</span> </h2>-->
 
         <ul id="movies">
-        <b>Opss, nada por aquí. </b>
-        <p>
-        Definí tu agenda en <a href="cinemaki.com">Cinemaki.com</a>
-        Y luego configura tu ID de usuario en "Opciones"</ul>
+            <h4>Opss, nada por aquí.</h4>
+            <p>1. Ingresa a <a href="cinemaki.com">Cinemaki.com</a> y registrate.</p>
+            <p>2. Visita las <a href="#" target="_blank" class="options">opciones</a> y define tus preferencias</p>
+            <p>3. Descarga tus películas favoritas!</p>
+        </ul>
 
-        <div class="foot">
-            <a href="#" onclick="resyncme()" class="butt btn">Refrescar</a>
-            Método de descarga: <span id="met">ninguno</span>
-            <br>(se cambia en opciones)
+        <div class="gray">
+            <div class="foot">
+                <a href="#" onclick="resyncme()" class="butt btn">Refrescar</a>
+                Método de descarga: <span id="met">ninguno</span>. 
+                <br> <a href="#" target="_blank" class="options">(se cambia en opciones)</a>
+            </div>
+
+            <div id="status" class="alert-message">
+                <p></p>
+            </div>
+
+            <!--<div id="disclaimer">
+            (*) Esta applicación no esta relaciona con Cinemaki.com, ni con sus propietarios
+            </div>-->
+            <span class="help-block">
+                <strong>Nota:</strong> Esta applicación no esta relaciona con Cinemaki.com, ni con sus propietarios.
+            </span>
         </div>
-
-        <div id="status" class="alert-message">
-            <p></p>
-        </div>
-
-        <!--<div id="disclaimer">
-        (*) Esta applicación no esta relaciona con Cinemaki.com, ni con sus propietarios
-        </div>-->
-        <span class="help-block">
-            <strong>Nota:</strong> Esta applicación no esta relaciona con Cinemaki.com, ni con sus propietarios.
-        </span>
         <div id="log" style="display:none"></div>
 
         <!-- MOVIE TEMPLATE -->    
