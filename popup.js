@@ -249,6 +249,7 @@ function updateDisplay () {
 
         e = movie[movie_id];
         e.movie_id = movie_id;
+        e.title_escaped = escape(e.title);
 
         if (e.done) {
             total_done++;

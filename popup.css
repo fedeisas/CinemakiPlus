@@ -4,6 +4,7 @@
 }
 html {
     overflow:hidden;
+
 }
 body {
     color:#555 ;
@@ -40,9 +41,9 @@ h2 {
 
 #movies {
     padding:0;
-    width:314px;
-    overflow:hidden;
-    height: 435px;
+    width:330px;
+    overflow-y: scroll;
+    height: 445px;
     margin:0 auto;
 }
 
@@ -51,7 +52,7 @@ h2 {
     margin:5px;
     padding:2px 1px;
     width:66px;
-    height:130px;
+    height:140px;
     overflow:hidden;
     background:#ccc;
     text-align:center;
@@ -70,9 +71,6 @@ h2 {
 }
 .butt {
     float:right;
-}
-.butt2 {
-    height:15px;
 }
 
 .nbutt2 {
@@ -99,11 +97,14 @@ a.image {
     height:96px;
     width:64px;
 }
+.butt2 {
+    margin-top:6px;
+}
 ul#movies a.btn {
     width: 34px;
     height: 10px;
     line-height: 10px;
-    margin-top: 6px;
+    margin-top: 1px;
 }
 .help-block {
     padding: 2px 10px;
@@ -126,4 +127,12 @@ span.loader {
 }
 .gray {
     background: #EEE;
+    height:160px;
+}
+.page-header {
+    margin-bottom: 10px;
+}
+.close:hover {
+    color: #FF0000;
+    opacity:1;
 }

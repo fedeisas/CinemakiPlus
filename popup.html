@@ -8,7 +8,7 @@
         <link rel="stylesheet" type="text/css" href="popup.css">
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" language="JavaScript"></script>
-        <script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.js" type="text/javascript" language="JavaScript"></script>
+        <script src="jquery.tmpl.js" type="text/javascript" language="JavaScript"></script>
         <script src="popup.js" type="text/javascript" language="JavaScript"></script>
 <!--
     1. bajar lista de pelis
@@ -40,7 +40,7 @@
             <div class="foot">
                 <a href="#" onclick="resyncme()" class="butt btn">Refrescar</a>
                 Método de descarga: <span id="met">ninguno</span>. 
-                <br> <a href="#" target="_blank" class="options">(se cambia en opciones)</a>
+                <br> <a href="#" target="_blank" class="options">Más opciones</a>
             </div>
 
             <div id="status" class="alert-message">
@@ -71,6 +71,8 @@
                     <a id="d${movie_id}" class="butt2 btn success" href="${torrent_url}" target="_blank" onclick="movie[${movie_id}].done=1">
                         Bajar
                     </a>
+                    <a class="butt3" href="http://www.subdivx.com/index.php?buscar=${title_escaped}&accion=5&masdesc=&subtitulos=1&realiza_b=1" target="_blank">Subs</a>
+                    
                 {{else}}
                     <a id="d${movie_id}" class="butt2 btn disabled" href="#" target="_blank">
                         N / D
