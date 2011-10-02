@@ -220,19 +220,6 @@ function log(text) {
     //console.log(text);
 }
 
-/*function status(text) {
-
-    log(text);
-
-    // Update status to let user know options were saved.
-    var status = document.getElementById("status");
-    status.innerHTML = text;
-
-    setTimeout(function() {
-        status.innerHTML = "";
-    }, 4000);
-}*/
-
 function status(text, type) { // info, warning, error, success
 
     log(text);
@@ -275,12 +262,9 @@ function download2(movie_id) {
 function updateDisplay () {
 
     $("#movies").empty();
-    
-    /*var movieList = document.getElementById('movies');
-
-    movieList.innerHTML= '';*/
 
     total_done=0;
+
     var movies = [];
 
     for(var i=0,len = movies_ids.length; movie_id=movies_ids[i], i<len; i++) {
@@ -294,67 +278,6 @@ function updateDisplay () {
         }
 
         movies.push(e);
-
-        /*var d = document.createElement('li');
-        d.setAttribute("id","movie-" +  movie_id);
-
-
-
-        var l = document.createElement('a');
-        l.setAttribute("href", e.url );
-        l.setAttribute("target", "_blank" );
-
-
-        var title = unescape(e.title) + " (" + e.year + ")";
-        var img = document.createElement('img');
-        var txt = e.title + " | en agenda desde hace " + e.when;
-        img.setAttribute('src',e.img);
-        img.setAttribute('title',txt);
-        img.setAttribute('alt',txt);
-        img.setAttribute('height',"96px");
-        img.setAttribute('width',"64px");
-        l.appendChild(img);
-        d.appendChild(l);
-             
-
-        if (e.torrent_url) {
-            var l2 = document.createElement('a');
-
-            l2.setAttribute("id", "d" +  movie_id);
-            l2.setAttribute("class","h");
-
-            if (config.download) {
-                l2.setAttribute("href", e.torrent_url);
-                l2.setAttribute("target", "_blank" );
-                l2.setAttribute("onclick", "movie["+movie_id+"].done=1" );
-            }
-            else {
-                l2.setAttribute("href", "#");
-                l2.setAttribute("onclick", "download2("+ movie_id+")" );
-            }
-
-            l2.setAttribute("class", "butt2" );
-            l2.innerHTML = "Bajar";
-            d.appendChild(l2);
-        }
-        else {
-            var l2 = document.createElement('div');
-            l2.setAttribute("class", "nbutt2" );
-            l2.innerHTML = "N / D";
-            d.appendChild(l2);
-        }
-
-            var l2 = document.createElement('a');
-            l2 = document.createElement('a');
-            l2.setAttribute("href", "#" );
-            l2.setAttribute("onclick", "hideTorrent("+ movie_id+")" );
-            l2.setAttribute("class", "butt3" );
-            l2.innerHTML = "Ocultar";
-        d.appendChild(l2);
-
-
-        movieList.appendChild(d);*/
-
     }
     $("#movieTemplate").tmpl(movies).appendTo("#movies");
 }
