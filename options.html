@@ -5,9 +5,8 @@
         <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
         <link rel="stylesheet" type="text/css" href="options.css">
         <link rel="stylesheet" type="text/css" href="bootstrap.css">
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" language="JavaScript"></script>
+        <script src="jquery.js" type="text/javascript" language="JavaScript"></script>
         <script src="options.js" type="text/javascript" language="JavaScript"></script>
-
     </head>
 
     <body onload="" style="background:#ccc">
@@ -39,7 +38,32 @@
                 </div>
             </div>
 
+            <div class="clearfix">
+                <label for="normalSelect">Sitio de Torrents</label>
+                <div class="input">
+                  <select id="torrent_pref" name="torrent_pref" class="span3">
+                    <option value="TJ">Torrent Junkie</option>
+                    <option value="TPB">The Pirate Bay</option>
+                  </select>
+                </div>
+            </div>
+
             <h3>Cinemaki</h3>
+
+            <div class="clearfix">
+                <label for="normalSelect">País</label>
+                <div class="input">
+                  <select id="domain" name="domain" class="span3">
+                    <option value="www.cinemaki.com.ar">Argentina</option>
+                    <option value="www.cinemaki.com.br">Brazil</option>
+                    <option value="www.cinemaki.cl">Chile</option>
+                    <option value="www.cinemaki.com.co">Colombia</option>
+                    <option value="www.cinemaki.com.mx">México</option>
+                    <option value="www.cinemaki.com.pe">Peru</option>
+                    <option value="www.cinemaki.com.ve">Venezuela</option>
+                  </select>
+                </div>
+            </div>
 
             <div class="clearfix">
                 <label>ID de usuario</label>

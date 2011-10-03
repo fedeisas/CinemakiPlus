@@ -30,7 +30,9 @@ h2 {
 }
 
 
-#met { font-weight:bold}
+#met, #tp { 
+    font-weight:bold;
+}
 
 .b1 {
     font-weight:bold;
@@ -43,7 +45,7 @@ h2 {
     padding:0;
     width:330px;
     overflow-y: scroll;
-    height: 445px;
+    height: 425px;
     margin:0 auto;
 }
 

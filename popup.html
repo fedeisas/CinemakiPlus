@@ -7,7 +7,7 @@
         <link rel="stylesheet" type="text/css" href="bootstrap.css">
         <link rel="stylesheet" type="text/css" href="popup.css">
 
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" language="JavaScript"></script>
+        <script src="jquery.js" type="text/javascript" language="JavaScript"></script>
         <script src="jquery.tmpl.js" type="text/javascript" language="JavaScript"></script>
         <script src="popup.js" type="text/javascript" language="JavaScript"></script>
 <!--
@@ -39,7 +39,8 @@
         <div class="gray">
             <div class="foot">
                 <a href="#" onclick="resyncme()" class="butt btn">Refrescar</a>
-                Método de descarga: <span id="met">ninguno</span>. 
+                Método de descarga: <span id="met">ninguno</span>.
+                <br>Sitio de Torrents: <span id="tp"></span> 
                 <br> <a href="#" target="_blank" class="options">Más opciones</a>
             </div>
 
@@ -60,7 +61,7 @@
         <script id="movieTemplate" type="text/x-jquery-tmpl">
             <li id="movie-${movie_id}">
                 <a class="image" href="${url}" target="_blank">
-                    <img src="${img}" title="${title} | en agenda desde hace ${when}" alt="${title} | en agenda desde hace ${when}" height="96px" width="64px" />
+                    <img src="${img}" title="${title} | en agenda desde hace ${when}" alt="${title}" height="96px" width="64px" />
                 </a>
 
                 <a href="#" onclick="hideTorrent(${movie_id})" class="close" title="Ocultar">

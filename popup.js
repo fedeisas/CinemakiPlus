@@ -24,7 +24,6 @@ function processTPB(data) {
 
     $('a[href^="http://torrents.thepiratebay.org/"]').each(function()
     {
-//           console.log("torrent "+ c + ":" + $(this).attr("href"));
 
         var t, 
             text,
@@ -67,6 +66,57 @@ function processTPB(data) {
     return torrent[0];
 }
 
+function processTJ(data) {
+    var d,
+        data2,
+        c,
+        torrent;
+
+    d = document.getElementById("log");
+
+    data2 = data.substr(data.indexOf('<body'));
+    data2 = data2.substr(data2.indexOf('>'));
+    data2 = data2.replace(/\<iframe.*?\/iframe\>/g,'');
+    data2 = data2.replace(/\<form.*?\/form\>/g,'');
+    data2 = data2.replace(/\<img.*?\>/g,'');
+
+    d.innerHTML = data2;
+
+    c=0;
+    torrent = new Array;
+
+    $('a[href^="http://dl.btjunkie.org/torrent/"]').each(function()
+    {
+        var t,
+            text,
+            p,
+            val;
+
+        t = new Object;
+        t.url = $(this).attr("href");
+
+        text =  $(this).parent().parent().parent().parent().parent()
+                .parent().children("th").eq(2).text();
+
+        p = text.indexOf("MB");
+
+        if ( p  > 0 ) {
+            val = text.substr(0,p);
+
+            val = val.replace(/[^\d,.]/g, '');
+
+            t.size = parseFloat(val) ;
+        }
+
+        if ( t.size && t.size > config.min_size && t.size < config.max_size ) {
+            torrent[c++] = t;
+        }
+    });
+
+    console.log( "Encontré " + c + " torrents");
+
+    return torrent[0];
+}
 
 function addTorrent(torrent, allow_restart) {
     var xhr;
@@ -186,16 +236,35 @@ function getTPB(i,title,year) {
         }
     );
 }
+function getTJ(i,title,year) {
+    var u = "http://btjunkie.org/search?q=" + escape(title) + "%20" + year;
+
+    $.get(
+        u,
+        function(data) {
+            var t = processTJ(data); 
+            movie[i].tried = 1;
+
+            if ( typeof(t) != "undefined" && t.url) {
+                movie[i].torrent_url = t.url;
+                movie[i].torrent_size_mb= t.size;
+            }
+            saveStorage();
+            updateDisplay();
+        }
+    );
+}
 
 function log(text) {
     console.log(text);
 }
 
-function status(text, type) { // info, warning, error, success
+function status(text, type, keep) { // info, warning, error, success
 
     log(text);
 
     type = typeof(type) != 'undefined' ? type : 'info';
+    keep = typeof(keep) != 'undefined' ? keep : 0;
 
     $("span.loader").show();
     
@@ -204,12 +273,14 @@ function status(text, type) { // info, warning, error, success
     $("#status p").html(text);
     $("#status").addClass(type).fadeIn();
 
-    setTimeout(function() {
-        $("#status").fadeOut('fast', function(){
-           $("#status").removeClass(type); 
-           $("span.loader").hide();
-        });
-    }, 4000);
+    if ( keep == 0 ) {
+        setTimeout(function() {
+            $("#status").fadeOut('fast', function(){
+               $("#status").removeClass(type); 
+               $("span.loader").hide();
+            });
+        }, 4000);   
+    }
 }
 
 function hideTorrent(movie_id) {
@@ -301,7 +372,11 @@ function refreshTorrents() {
         if (e.done) continue;
 
         if (! e.torrent_url && ! e.tried) {
-            getTPB(movie_id, e.title,e.year);
+            if (config.torrent_pref == 'TPB' ) {
+               getTPB(movie_id, e.title,e.year);
+            } else {
+                getTJ(movie_id, e.title,e.year);
+            }
         }
     }
 }
@@ -362,7 +437,7 @@ function getUTokens() {
                 }
             }
 
-        }).error(function() { log("error con utorrent"); });
+        }).error(function() { log("Error con utorrent"); });
 }
 
 
@@ -405,7 +480,7 @@ function getScheduled(id) {
 
     status("Contactando Cinemaki...","info");
 
-    $.get(
+    /*$.get(
         "http://www.cinemaki.com.ar/scheduled/" + id  
                 + "/limit/24"
                 + "/start/" + total_done ,
@@ -432,7 +507,34 @@ console.log(scheduled.user);
 //                updateTransmission();
 //                updateUtorrent();
         }
-    );
+    );*/
+
+    $.ajax({
+        type: "GET",
+        url: "http://www.cinemaki.com.ar/scheduled/" + id  
+                + "/limit/24"
+                + "/start/" + total_done,
+        success: function(data) {
+            log("procesando Cinemaki");
+            var scheduled = jQuery.parseJSON(data);
+            $("#user").html(scheduled.user);
+
+            if (scheduled.movies.length) {
+                storeScheduled(scheduled);
+                updateDisplay();
+                saveStorage();
+                refreshTorrents();
+            }
+            else {
+                status("No tienes películas agendadas!  <a href='http://" + config.domain + "/me/scheduled' target='_blank'>Agrega unas cuantas a tu agenda</a> para comenzar", "warning", 1);
+            }
+        },
+        statusCode: {
+            401: function() {
+                status("Tienes que estar logeado en  <a href='http://" + config.domain + "' target='_blank'>Cinemaki "+ config.country +"</a> para comenzar. <br> Puedes tambien <a href='#' onclick='window.open( " + chrome.extension.getURL('options.html') + ")'>cambiar tu pais</a>.", "warning", 1);
+            }
+        }
+    });
 }
 
 function resyncme() {
@@ -459,6 +561,9 @@ function init() {
         config.utorrent        = false;
         config.download        = true;
         config.concurrent     = 10;
+        config.domain           = 'www.cinemaki.com.ar';
+        config.country          = 'Argentina';
+        config.torrent_pref     = 'TJ';
     }
 
 
@@ -481,6 +586,8 @@ function init() {
 
     if (config.download) 
         $("#met").html('link a torrent');
+
+    $("#tp").html(config.torrent_pref);
 
     getScheduled(config.ck_id);
 }

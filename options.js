@@ -48,7 +48,12 @@ function save_options() {
     config.min_size     = parseInt( $("#min_size").val() );
     config.max_size     = parseInt( $("#max_size").val() );
     config.ck_id        = parseInt( $("#ck_id").val() );
-//    config.concurrent   = parseInt( $("#concurrent").val() );
+
+    config.torrent_pref = $("#torrent_pref").val();
+
+    config.domain       = $("#domain").val();
+    config.country      = $("#domain option:selected").text();
+
     config.transmission_host     = $("#transmission_host").val();
 
     config.utorrent_host         = $("#utorrent_host").val();
@@ -75,26 +80,35 @@ function restore_options() {
 
     if (t) {
         config = JSON.parse(t);
+
+        if ( !config.ck_id || config.ck_id == 12 ) {
+            find_user_id();    
+        }
     }
     else  {
         config.min_size = 500;
         config.max_size = 1600;
         config.ck_id    = 12;
+        config.torrent_pref = 'TJ';
+        config.domain   = 'www.cinemaki.com.ar';
         config.transmission         = false;
         config.transmission_host    = '127.0.0.1';
         config.utorrent    = false;
         config.download    = true;
-//            config.concurrent      = 10;
+
         config.utorrent_host    = '127.0.0.1';
         config.utorrent_port    = '55972';
         config.utorrent_user    = 'admin';
         config.utorrent_pass    = '';
-        find_user_id();
     }
 
     $("#min_size").val(config.min_size);
     $("#max_size").val(config.max_size);
+
     $("#ck_id").val(config.ck_id);
+    $("#torrent_pref").val(config.torrent_pref);
+    $("#domain").val(config.domain);
+
     $("#transmission_host").val(config.transmission_host);
 
     $("#utorrent_host").val(config.utorrent_host);
